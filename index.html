@@ -98,6 +98,10 @@
 			return point*PARAMS.unit;
 		}
 
+		var normalizePointInSVG = function(point){ 
+			return point*PARAMS.unit+((PARAMS.unit-2)/2);
+		}
+
 		var init = function(){  
 			var img = document.getElementById("handImg");  
 			var canvas = getCanvas(); 
@@ -230,7 +234,6 @@
 					repeat = true;
 					break;
 				} 
- 
 			} 
 
 			if(repeat && iteration<100){ 
@@ -374,28 +377,28 @@
 		    	path: [],
 		    	status: 'Start',
 		    	coordinates:[]
-		  };
+		 	};
 
-		  // Initialize the queue with the start location already inside
-		  var queue = [location]; 
+		  	// Initialize the queue with the start location already inside
+		  	var queue = [location]; 
 		   
-		while (queue.length > 0) { 
-			 
-			// Take the first location off the queue
-			var currentLocation = queue.shift();  
-		  	var directions = ["South", "SouthEast", "West","SouthWest", "North","NorthEast","NorthWest","East"];
-		  	for( dir in directions){
-		  		var newLocation = exploreInDirection(currentLocation, directions[dir]);
-		  			if (newLocation.status === 'End') { 
-		  				newLocation.coordinates.push(endCoordinates); 
-		  				return newLocation;
-		  			} else if (newLocation.status === 'Valid') {
-		  				queue.push(newLocation);
-		  			}
-			}
-		}  
-		// No valid path found
-		return false;
+			while (queue.length > 0) { 
+				 
+				// Take the first location off the queue
+				var currentLocation = queue.shift();  
+			  	var directions = ["South", "SouthEast", "West","SouthWest", "North","NorthEast","NorthWest","East"];
+			  	for( dir in directions){
+			  		var newLocation = exploreInDirection(currentLocation, directions[dir]);
+			  			if (newLocation.status === 'End') { 
+			  				newLocation.coordinates.push(endCoordinates); 
+			  				return newLocation;
+			  			} else if (newLocation.status === 'Valid') {
+			  				queue.push(newLocation);
+			  			}
+				}
+			}  
+			// No valid path found
+			return false;
 		};
 
 		// This function will check a location's status
@@ -482,104 +485,49 @@
 
 
 		var drawPath = function(path){ 
-			var pathDirections = path.path.reverse();
-			pathDirections.push("Center");
-			pathDirections = path.path.reverse(); 
-
-			var line = [];
+			path.path.unshift(path.path[0]); 
+ 			 
 			var points = '';
-			
+			var direction = ""; 
+			var lastPoint =  path.coordinates.pop();
+
+			for (var i=1; i<path.coordinates.length; i++){
+				if(direction != path.path[i]|| 
+					direction != path.path[i-2] ){ 
+						points += normalizePointInSVG(path.coordinates[i-1].x)+","+
+									normalizePointInSVG(path.coordinates[i-1].y)+" ";  
+						direction = path.path[i]; 
+				}
+			}
+
+			points += normalizePointInSVG(lastPoint.x)+","+
+						normalizePointInSVG(lastPoint.y)+" "; 
+
 			var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
 			polyline.setAttribute("stroke","red");
 			polyline.setAttribute("stroke-width", PARAMS.unit-2);
 			polyline.setAttribute("fill", "none");
-			var canvas = getCanvas(); 
-			var ctx = canvas.getContext("2d");
-			ctx.fillStyle = 'rgb(255,255,255)';
-
-			
-			var direction = ""; 
-
-			for (var i=0; i<pathDirections.length; i++){
-				if(direction != pathDirections[i]|| 
-					direction != pathDirections[i-2] ||
-					i == pathDirections.length-1){
-					line.push(path.coordinates[i]);
-					points += normalizePoint(path.coordinates[i].x)+", "+
-								normalizePoint(path.coordinates[i].y)+" ";  
-					direction = pathDirections[i];
-				}
-			}
-
-
-
-			console.log(points);
+			polyline.setAttribute("points",points); 
 
 			var start = document.createElementNS("http://www.w3.org/2000/svg", "circle");
 			start.setAttribute("stroke","black");
 			start.setAttribute("stroke-width", 1);
 			start.setAttribute("fill", "green");
 			start.setAttribute("r", PARAMS.unit/2);
-			start.setAttribute("cx", normalizePoint(path.coordinates[0].x));
-			start.setAttribute("cy", normalizePoint(path.coordinates[0].y));
+			start.setAttribute("cx", normalizePointInSVG(path.coordinates[0].x));
+			start.setAttribute("cy", normalizePointInSVG(path.coordinates[0].y));
 
 			var end  = document.createElementNS("http://www.w3.org/2000/svg", "circle");
 			end.setAttribute("stroke","black");
 			end.setAttribute("stroke-width", 1);
 			end.setAttribute("fill", "blue");
 			end.setAttribute("r", PARAMS.unit/2);
-			end.setAttribute("cx", normalizePoint(path.coordinates[pathDirections.length-1].x));
-			end.setAttribute("cy", normalizePoint(path.coordinates[pathDirections.length-1].y));
-
-			polyline.setAttribute("points",points); 
+			end.setAttribute("cx", normalizePointInSVG(lastPoint.x));
+			end.setAttribute("cy", normalizePointInSVG(lastPoint.y));
+			
 			SVG.appendChild(polyline);
 			SVG.appendChild(start); 
-			SVG.appendChild(end);
-			 
-
-/*			if(coordinates !== false){   
-				var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-				polyline.setAttribute("stroke","red");
-				polyline.setAttribute("stroke-width", PARAMS.unit-2);
-				polyline.setAttribute("fill", "none");
-
-				var start = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-				start.setAttribute("stroke","black");
-				start.setAttribute("stroke-width", 1);
-				start.setAttribute("fill", "green");
-				start.setAttribute("r", PARAMS.unit/2);
-
-				var end  = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-				end.setAttribute("stroke","black");
-				end.setAttribute("stroke-width", 1);
-				end.setAttribute("fill", "blue");
-				end.setAttribute("r", PARAMS.unit/2);
-
-				var points= "";
-				for (var key in coordinates) {
-					var X = normalizePoint(coordinates[key].x);
-					var Y = normalizePoint(coordinates[key].y);
-					if(key == 0){ 
-						start.setAttribute("cx", X+3);
-						start.setAttribute("cy", Y);
-					}
-
-					if(key == Object.keys(coordinates).length-1){
-						end.setAttribute("cx", X+3);
-						end.setAttribute("cy", Y);
-					}
-					  
-					points  +=  (X+3)+","+(Y)+" "; 
-					//ctx.fillStyle = 'rgb(255,0,0)';
-					//ctx.fillRect(normalizePoint(coordinate.x)+1,normalizePoint(coordinate.y)+1,PARAMS.unit-1,PARAMS.unit-1);		
-					
-				} 
-
-				polyline.setAttribute("points",points); 
-				SVG.appendChild(polyline);
-				SVG.appendChild(start); 
-				SVG.appendChild(end); 
-			}*/
+			SVG.appendChild(end); 
 		} 
 
 		function shuffleArray(array) {
@@ -598,7 +546,6 @@
 		   		init(); 
 		   	},1000); 
 
-
 		   	$("#autoRouting").click(function(){
 		   		var routes = autoRouting();
 		   		for (var key in routes) {
@@ -613,7 +560,6 @@
 
 				for (var y = 0; y < PARAMS.gridHeight; y++) {  
 				    for (var x = 0; x < PARAMS.gridWidth; x++) { 
-
 			    		if(GRID[y][x] == 'OuterObstacle'){
 			    			ctx.fillStyle = 'rgb(255,255,255)'; 
 			    			ctx.fillRect(normalizePoint(x)+1,normalizePoint(y)+1,PARAMS.unit-1,PARAMS.unit-1); 
@@ -622,10 +568,8 @@
 	  		    			ctx.fillStyle = 'rgb(255,255,0)'; 
 	  		    			ctx.fillRect(normalizePoint(x)+1,normalizePoint(y)+1,PARAMS.unit-1,PARAMS.unit-1);
 	  		    		}
-	  		    		
 				    }
 				}
-		   		
 		   	});
 		}); 
 
