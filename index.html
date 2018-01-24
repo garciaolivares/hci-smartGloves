@@ -22,7 +22,7 @@
 	    		</div>
 	    	</div>
 	    	<div class="col"> 
-	    		<img id="handImg" src="img/render2.png">
+	    		<img id="handImg" src="img/render.png">
 	    		<canvas id="handCanvas" class=""></canvas>
 	    		<div id="handSVGWrapper">
 	    			<div id="handSVG"></div>
@@ -300,8 +300,6 @@
 				if(GRID[Y][X]!= 'OuterObstacle'){
 					GRID[Y][X] = 'Obstacle';
 				} 
- 
-				 
 				if(obstacles.path[key]=='SouthEast'){
 					if(GRID[Y][X+1]!= 'OuterObstacle') { 
 						GRID[Y][X+1]='Obstacle'
@@ -385,9 +383,7 @@
 			 
 			// Take the first location off the queue
 			var currentLocation = queue.shift();  
-
 		  	var directions = ["South", "SouthEast", "West","SouthWest", "North","NorthEast","NorthWest","East"];
-		  
 		  	for( dir in directions){
 		  		var newLocation = exploreInDirection(currentLocation, directions[dir]);
 		  			if (newLocation.status === 'End') { 
@@ -400,7 +396,6 @@
 		}  
 		// No valid path found
 		return false;
-
 		};
 
 		// This function will check a location's status
@@ -434,7 +429,7 @@
 		};
 
 
-		var tempOBS =[];
+		 
 		// Explores the grid from the given location in the given
 		// direction
 		var exploreInDirection = function(currentLocation, direction) {
@@ -486,9 +481,63 @@
 		}; 
 
 
-		var drawPath = function(coordinates){   
+		var drawPath = function(path){ 
+			var pathDirections = path.path.reverse();
+			pathDirections.push("Center");
+			pathDirections = path.path.reverse(); 
 
-			if(coordinates !== false){   
+			var line = [];
+			var points = '';
+			
+			var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+			polyline.setAttribute("stroke","red");
+			polyline.setAttribute("stroke-width", PARAMS.unit-2);
+			polyline.setAttribute("fill", "none");
+			var canvas = getCanvas(); 
+			var ctx = canvas.getContext("2d");
+			ctx.fillStyle = 'rgb(255,255,255)';
+
+			
+			var direction = ""; 
+
+			for (var i=0; i<pathDirections.length; i++){
+				if(direction != pathDirections[i]|| 
+					direction != pathDirections[i-2] ||
+					i == pathDirections.length-1){
+					line.push(path.coordinates[i]);
+					points += normalizePoint(path.coordinates[i].x)+", "+
+								normalizePoint(path.coordinates[i].y)+" ";  
+					direction = pathDirections[i];
+				}
+			}
+
+
+
+			console.log(points);
+
+			var start = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			start.setAttribute("stroke","black");
+			start.setAttribute("stroke-width", 1);
+			start.setAttribute("fill", "green");
+			start.setAttribute("r", PARAMS.unit/2);
+			start.setAttribute("cx", normalizePoint(path.coordinates[0].x));
+			start.setAttribute("cy", normalizePoint(path.coordinates[0].y));
+
+			var end  = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			end.setAttribute("stroke","black");
+			end.setAttribute("stroke-width", 1);
+			end.setAttribute("fill", "blue");
+			end.setAttribute("r", PARAMS.unit/2);
+			end.setAttribute("cx", normalizePoint(path.coordinates[pathDirections.length-1].x));
+			end.setAttribute("cy", normalizePoint(path.coordinates[pathDirections.length-1].y));
+
+			polyline.setAttribute("points",points); 
+			SVG.appendChild(polyline);
+			SVG.appendChild(start); 
+			SVG.appendChild(end);
+			 
+
+/*			if(coordinates !== false){   
 				var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
 				polyline.setAttribute("stroke","red");
 				polyline.setAttribute("stroke-width", PARAMS.unit-2);
@@ -521,8 +570,8 @@
 					}
 					  
 					points  +=  (X+3)+","+(Y)+" "; 
-					/*ctx.fillStyle = 'rgb(255,0,0)';
-					ctx.fillRect(normalizePoint(coordinate.x)+1,normalizePoint(coordinate.y)+1,PARAMS.unit-1,PARAMS.unit-1);*/		
+					//ctx.fillStyle = 'rgb(255,0,0)';
+					//ctx.fillRect(normalizePoint(coordinate.x)+1,normalizePoint(coordinate.y)+1,PARAMS.unit-1,PARAMS.unit-1);		
 					
 				} 
 
@@ -530,7 +579,7 @@
 				SVG.appendChild(polyline);
 				SVG.appendChild(start); 
 				SVG.appendChild(end); 
-			}
+			}*/
 		} 
 
 		function shuffleArray(array) {
@@ -553,7 +602,7 @@
 		   	$("#autoRouting").click(function(){
 		   		var routes = autoRouting();
 		   		for (var key in routes) {
-		   			drawPath(routes[key].coordinates);  
+		   			drawPath(routes[key]);  
 		   		}
 		   	});
 
