@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <!-- main CSS -->
+    <link rel="stylesheet" type="text/css" href="css/hand.css" />
+    <link rel="stylesheet" type="text/css" href="css/grid.css" />
+  </head>
+
+  <body>
+    <div class="container-fluid">
+	    <div class="row justify-content-md-center" id="frame"> 
+	    	<div class="col-2">
+	    		<div class="controls">
+	    		    <button type="button" id="autoRouting" class="btn btn-danger">Trace Route</button>
+	    		    <button type="button" id="reset" class="btn btn-danger">Draw Obstacles</button>
+	    		</div>
+	    	</div>
+	    	<div class="col"> 
+	    		<img id="handImg" src="img/render2.png">
+	    		<canvas id="handCanvas" class=""></canvas>
+	    		<div id="handSVGWrapper">
+	    			<div id="handSVG"></div>
+	    		</div>
+	    		<div id="tooltip">0,0</div>	 
+	    	</div>
+	    	<div class="col-2">
+	    		 	<div id="legend" class="row">
+	    		 		<div class="col">
+	    		 			<div  class="row">
+	    		 				<div class="col">
+	    		 					Start Point:
+	    		 				</div>
+	    		 				<div class="col-4">
+	    		 					<svg width="20" height="20">
+	    		 					   <circle cx="10" cy="10" r="5" stroke="black" stroke-width="1" fill="green" />
+	    		 					</svg>
+	    		 				</div>
+	    		 			</div>
+	    		 			<div  class="row">
+	    		 				<div class="col">
+	    		 					End Point:
+	    		 				</div>
+	    		 				<div class="col-4">
+	    		 					<svg width="20" height="20">
+	    		 					   <circle cx="10" cy="10" r="5" stroke="black" stroke-width="1" fill="blue" />
+	    		 					</svg>
+	    		 				</div>
+	    		 			</div>
+	    		 			<div  class="row">
+	    		 				<div class="col">
+	    		 					Path:
+	    		 				</div>
+	    		 				<div class="col-4">
+	    		 					<svg width="30" height="20">
+	    		 					   <line x1="0" y1="10" x2="30" y2="10" style="stroke:rgb(255,0,0);stroke-width:4" />
+	    		 					</svg>
+	    		 				</div>
+	    		 			</div>
+	    		 		</div>
+	    		 	</div>
+	    			 
+	    	</div>
+	    </div>
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="js/jquery-3.2.1.min.js" type="text/javascript"></script>  
+    <script src="js/bootstrap.js" ></script> 
+	<script type="text/javascript">
+
+		var PARAMS =   {
+				gridWidth: 65,
+				gridHeight: 130,
+				unit: Math.ceil(($(window).height())/130),  //$(".progress").height()
+		}
+		
+		var loadInterfaceElements = function(){
+			$("#handImg").css({"height":$(window).height()}); //$(".progress").height()  
+		}
+
+		var GRID = [];
+		var GRID_AUX = []; 
+		var SVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+		var getCanvas = function(){
+			var canvas = document.getElementById("handCanvas");
+			return canvas;
+		} 
+
+		var normalizePoint = function(point){ 
+			return point*PARAMS.unit;
+		}
+
+		var init = function(){  
+			var img = document.getElementById("handImg");  
+			var canvas = getCanvas(); 
+
+			canvas.width = img.width;
+			canvas.height = img.height;
+
+			SVG.setAttribute("width",img.width);
+			SVG.setAttribute("height",img.height);
+			$("#handSVG").css({"width":img.width, "height":img.height}).append(SVG); 
+
+			var ctx = canvas.getContext("2d");
+			ctx.drawImage(img, 0, 0,canvas.width,canvas.height);  
+			data = ctx.getImageData(0, 0, canvas.width, canvas.height).data; 
+			ctx.strokeStyle  = 'rgba(0, 0, 0, 0.20)';
+			
+			var j;
+			var i;
+			for (var y = 0, j=0; y < canvas.height; y=y+PARAMS.unit, j++) {  
+				GRID[j]=[];
+			    for (var x = 0,  i=0; x < canvas.width; x=x+PARAMS.unit, i++) { 
+			    	var index = ((y * canvas.width + x) * 4)+PARAMS.unit; 
+		    		if(data[index+3]==0){  
+  		    			GRID[j][i] = 'OuterObstacle';
+  		    		}else{
+  		    			ctx.rect(x,y,PARAMS.unit,PARAMS.unit);
+  		    			GRID[j][i] = 'Empty';
+  		    		}
+			    }
+			} 
+			ctx.stroke(); 
+			PARAMS.gridHeight = j;
+			PARAMS.gridWidth = i;
+
+			$('#handSVG').mousemove(function(e) { 
+			    var pos = findPosition(this); 
+			    if(pos !== undefined){
+		    	    var x =  Math.abs(Math.ceil((e.pageX - pos.x)/PARAMS.unit)-1);
+		    	    var y =  Math.abs(Math.ceil((e.pageY - pos.y)/PARAMS.unit)-1);
+		    	    if(GRID[y][x]!='OuterObstacle'){  
+		    	    	$("#tooltip").html(x +", "+ y).css({"visibility":"visible","top":(((e.pageY - pos.y)+this.offsetTop)-20), "left":((e.pageX - pos.x)+this.offsetLeft+5)});
+		    	    	$(this).css({"cursor":"pointer"});  
+		    	    	 
+		    	    }else{
+		    			$("#tooltip").css({"visibility":"hidden"});
+		    			$(this).css({"cursor":"default"}); 
+		    		}
+			    }
+			}).mouseout(function(e) {
+			    $("#tooltip").css({"visibility":"hidden"}); 
+			}); 
+			    
+		}
+
+		function findPosition(obj) { 
+		    var curleft = 0, curtop = 0;
+		    if (obj.offsetParent) {
+		        do {
+		            curleft += obj.offsetLeft;
+		            curtop += obj.offsetTop;
+		        } while (obj = obj.offsetParent);
+		        return { x: curleft, y: curtop };
+		    }
+		    return undefined;
+		}  
+
+		var routingSet=[
+				 
+				[
+					{x:21, y:15},  
+					{x:25,y:125}
+				],
+				[
+					{x:46, y:14},  
+					{x:44,y:125}
+				],
+				[
+					{x:21, y:26},  
+					{x:30,y:125}
+				]     				 
+			]; 
+
+		var routes=[]; 
+		var iteration =0;
+		var repeat = false;
+
+		function autoRouting(){
+ 
+			routingSet =  shuffleArray(routingSet); 
+
+			for (var key in routingSet) { 
+				
+				var route = routingSet[key]; 
+				//Avoiding Pin overlapping  
+				for (var key2 in routingSet) {
+					var pin = routingSet[key2]; 
+
+					if(key2!=key){
+						setTemporalObstacles(pin);
+					}else{
+						removeTemporalObstacles(pin);
+					}
+				}
+			 	
+				//Initialize grid with the Routing Set
+				 
+
+				for(var step in route){
+					var i = step +1; 
+					iteration++; 
+					
+					if(step < Object.keys(route).length-1){
+						var s = route[parseInt(step)];
+						var e = route[parseInt(step)+1]; 
+						setStart(s);
+						setEnd(e);
+						var output = findShortestPath(s,e);
+						var pathCoordinates = output.coordinates;
+						var pathDirections = output.path;
+
+						if(output == false){  
+							break;
+						}
+
+						routes.push(output);  
+						setObstacles(output);
+					}
+				}
+				if(output == false){ 
+					repeat = true;
+					break;
+				} 
+ 
+			} 
+
+			if(repeat && iteration<100){ 
+				for (var key in routes) { 
+					removeObstacles(routes[key]);
+				}
+				repeat = false;
+				routes = [];
+				autoRouting();
+			}
+			return routes;
+		}
+
+		function setStart(coord){ 
+			var Y = coord.y;
+			var X = coord.x;
+			GRID[Y][X] = 'Start'; 
+		}
+
+		function setEnd(coord){
+			var Y = coord.y;
+			var X = coord.x;
+			GRID[Y][X] = 'End';  
+		}
+
+		function removeTemporalObstacles(obstacles){ 
+			for (var key in obstacles) { 
+				var obstacle = obstacles[key];   
+				var X = obstacle.x;
+				var Y = obstacle.y;
+				//Restart grid for new the path calculation 
+				for(i = -1; i<2; i++){
+					for(j = -1; j<2; j++){  
+						if(GRID[Y+i][X+j] != 'OuterObstacle'){
+							GRID[Y+i][X+j]= 'Empty';	
+						}
+						  
+					} 
+				}  
+			} 
+		}
+
+		function setTemporalObstacles(obstacles){ 
+			 
+			for (var key in obstacles) { 
+				var obstacle = obstacles[key];   
+				var X = obstacle.x;
+				var Y = obstacle.y; 
+				//Initialize grid with new obstacles for the next path calculation 
+				for(i = -1; i<2; i++){
+					for(j = -1; j<2; j++){
+						if(GRID[Y+i][X+j] != 'OuterObstacle'){
+							GRID[Y+i][X+j]= 'Obstacle';	
+						}
+					} 
+				}  
+			}
+			 
+		}
+
+		function setObstacles(obstacles){ 
+
+			for (var key in obstacles.coordinates) { 
+			 	var X = obstacles.coordinates[key].x;
+				var Y = obstacles.coordinates[key].y; 
+
+				if(GRID[Y][X]!= 'OuterObstacle'){
+					GRID[Y][X] = 'Obstacle';
+				} 
+ 
+				 
+				if(obstacles.path[key]=='SouthEast'){
+					if(GRID[Y][X+1]!= 'OuterObstacle') { 
+						GRID[Y][X+1]='Obstacle'
+					}
+					if(GRID[Y+1][X]!= 'OuterObstacle') { 
+						GRID[Y+1][X]='Obstacle'
+					}  
+				}else if(obstacles.path[key]=='SouthWest'){
+					if(GRID[Y][X-1]!= 'OuterObstacle') { 
+						GRID[Y][X-1]='Obstacle'
+					}
+					if(GRID[Y+1][X]!= 'OuterObstacle') { 
+						GRID[Y+1][X]='Obstacle'
+					} 
+				}else if(obstacles.path[key]=='NorthWest'){ 
+					if(GRID[Y][X-1]!= 'OuterObstacle') { 
+						GRID[Y][X-1]='Obstacle'
+					}
+					if(GRID[Y-1][X]!= 'OuterObstacle') { 
+						GRID[Y-1][X]='Obstacle'
+					} 
+				}else if(obstacles.path[key]=='NorthEast'){
+					if(GRID[Y][X+1]!= 'OuterObstacle') { 
+						GRID[Y][X+1]='Obstacle'
+					}
+					if(GRID[Y-1][X]!= 'OuterObstacle') { 
+						GRID[Y-1][X]='Obstacle'
+					} 
+				}
+
+			} 
+		}
+
+		function removeObstacles(obstacles){ 
+			for (var key in obstacles.coordinates) {  
+			 	var X = obstacles.coordinates[key].x;
+				var Y = obstacles.coordinates[key].y; 
+				if(GRID[Y][X]!= 'OuterObstacle'){
+					GRID[Y][X] = 'Empty'
+				}    
+				if(obstacles.path[key]==='SouthEast'){
+					if(GRID[Y][X+1]!= 'OuterObstacle' ){ GRID[Y][X+1] = 'Empty'}; 
+					if(GRID[Y+1][X]!= 'OuterObstacle' ){ GRID[Y+1][X] = 'Empty'};   
+				}else if(obstacles.path[key]==='SouthWest'){
+					if(GRID[Y][X-1]!= 'OuterObstacle' ){ GRID[Y][X-1] = 'Empty'}; 
+					if(GRID[Y+1][X]!= 'OuterObstacle' ){ GRID[Y+1][X] = 'Empty'};  
+				}else if(obstacles.path[key]==='NorthWest'){ 
+					if(GRID[Y][X-1]!= 'OuterObstacle' ){ GRID[Y][X-1] = 'Empty'}; 
+					if(GRID[Y-1][X]!= 'OuterObstacle' ){ GRID[Y-1][X] = 'Empty'};  
+				}else if(obstacles.path[key]==='NorthEast'){
+					if(GRID[Y][X+1]!= 'OuterObstacle' ){ GRID[Y][X+1] = 'Empty'}; 
+					if(GRID[Y-1][X]!= 'OuterObstacle' ){ GRID[Y-1][X] = 'Empty'};  
+				}  
+			} 
+		}
+
+
+		/******************************************************/
+
+		// Start location will be in the following format:
+		// [distanceFromTop, distanceFromLeft]
+		var findShortestPath = function(startCoordinates, endCoordinates) {
+
+		  	var distanceFromLeft = startCoordinates.x;
+		  	var distanceFromTop = startCoordinates.y;
+
+		  	// Each "location" will store its coordinates
+		  	// and the shortest path required to arrive there
+		  	var location = {
+		    	distanceFromTop: distanceFromTop,
+		    	distanceFromLeft: distanceFromLeft,
+		    	path: [],
+		    	status: 'Start',
+		    	coordinates:[]
+		  };
+
+		  // Initialize the queue with the start location already inside
+		  var queue = [location]; 
+		   
+		while (queue.length > 0) { 
+			 
+			// Take the first location off the queue
+			var currentLocation = queue.shift();  
+
+		  	var directions = ["South", "SouthEast", "West","SouthWest", "North","NorthEast","NorthWest","East"];
+		  
+		  	for( dir in directions){
+		  		var newLocation = exploreInDirection(currentLocation, directions[dir]);
+		  			if (newLocation.status === 'End') { 
+		  				newLocation.coordinates.push(endCoordinates); 
+		  				return newLocation;
+		  			} else if (newLocation.status === 'Valid') {
+		  				queue.push(newLocation);
+		  			}
+			}
+		}  
+		// No valid path found
+		return false;
+
+		};
+
+		// This function will check a location's status
+		// (a location is "valid" if it is on the grid, is not an "obstacle",
+		// and has not yet been visited by our algorithm)
+		// Returns "Valid", "Invalid", "Blocked", or "End"
+		var locationStatus = function(location) { 
+		  	var dft = location.distanceFromTop;
+		  	var dfl = location.distanceFromLeft;  
+
+		  	if (dfl < 0 ||
+		      	dfl >= PARAMS.gridWidth ||
+		      	dft < 0 ||
+		      	dft >= PARAMS.gridHeight) {
+
+		    	// location is not on the grid--return false
+		    	return 'Invalid';
+		  	}else if(GRID[dft][dfl] === 'OuterObstacle'){
+		  		return 'Invalid';
+		  	} else if (GRID[dft][dfl] === 'End') { 
+		    	return 'End';
+		  	} else if (GRID[dft][dfl] === 'Obstacle') {
+		    	// location is  an obstacle 
+		    	return 'Blocked';
+		  	}else if (GRID[dft][dfl] === 'Visited'+iteration) {
+		    	// location has been visited by this itaration
+		    	return 'Blocked';
+		  	} else {
+		    	return 'Valid';
+		  	}
+		};
+
+
+		var tempOBS =[];
+		// Explores the grid from the given location in the given
+		// direction
+		var exploreInDirection = function(currentLocation, direction) {
+		  var newPath = currentLocation.path.slice();
+		  newPath.push(direction);
+
+		  var newCoordinetes = currentLocation.coordinates.slice();
+		  newCoordinetes.push({x:currentLocation.distanceFromLeft, y:currentLocation.distanceFromTop});
+
+		  var dft = currentLocation.distanceFromTop;
+		  var dfl = currentLocation.distanceFromLeft;
+
+		  if (direction === 'North') {
+		    dft -= 1;
+		  } else if (direction === 'East') {
+		    dfl += 1;
+		  } else if (direction === 'South') {
+		    dft += 1;
+		  } else if (direction === 'West') {
+		    dfl -= 1;
+		  } else if (direction === 'NorthEast'){
+		  	dft -= 1;
+		  	dfl += 1; 
+		  }else if (direction === 'SouthEast'){
+		  	dft += 1;
+		  	dfl += 1; 
+		  }else if (direction === 'SouthWest'){
+		  	dft += 1;
+		  	dfl -= 1; 
+		  }else if (direction === 'NorthWest'){
+		  	dft -= 1;
+		  	dfl -= 1; 
+		  }
+
+		  var newLocation = {
+		    distanceFromTop: dft,
+		    distanceFromLeft: dfl,
+		    path: newPath,
+		    status: 'Unknown',
+		    coordinates: newCoordinetes
+		  };
+		  newLocation.status = locationStatus(newLocation);
+
+		  // If this new location is valid, mark it as 'Visited'
+		  if (newLocation.status === 'Valid') { 
+		    GRID[newLocation.distanceFromTop][newLocation.distanceFromLeft] = 'Visited'+iteration;
+		  }
+		  return newLocation;
+		}; 
+
+
+		var drawPath = function(coordinates){   
+
+			if(coordinates !== false){   
+				var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+				polyline.setAttribute("stroke","red");
+				polyline.setAttribute("stroke-width", PARAMS.unit-2);
+				polyline.setAttribute("fill", "none");
+
+				var start = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+				start.setAttribute("stroke","black");
+				start.setAttribute("stroke-width", 1);
+				start.setAttribute("fill", "green");
+				start.setAttribute("r", PARAMS.unit/2);
+
+				var end  = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+				end.setAttribute("stroke","black");
+				end.setAttribute("stroke-width", 1);
+				end.setAttribute("fill", "blue");
+				end.setAttribute("r", PARAMS.unit/2);
+
+				var points= "";
+				for (var key in coordinates) {
+					var X = normalizePoint(coordinates[key].x);
+					var Y = normalizePoint(coordinates[key].y);
+					if(key == 0){ 
+						start.setAttribute("cx", X+3);
+						start.setAttribute("cy", Y);
+					}
+
+					if(key == Object.keys(coordinates).length-1){
+						end.setAttribute("cx", X+3);
+						end.setAttribute("cy", Y);
+					}
+					  
+					points  +=  (X+3)+","+(Y)+" "; 
+					/*ctx.fillStyle = 'rgb(255,0,0)';
+					ctx.fillRect(normalizePoint(coordinate.x)+1,normalizePoint(coordinate.y)+1,PARAMS.unit-1,PARAMS.unit-1);*/		
+					
+				} 
+
+				polyline.setAttribute("points",points); 
+				SVG.appendChild(polyline);
+				SVG.appendChild(start); 
+				SVG.appendChild(end); 
+			}
+		} 
+
+		function shuffleArray(array) {
+		    for (let i = array.length - 1; i > 0; i--) {
+		        let j = Math.floor(Math.random() * (i + 1));
+		        [array[i], array[j]] = [array[j], array[i]];
+		    }
+		    return array;
+		}
+
+		jQuery(document).ready(function() {       
+		   	// initiate layout and plugins
+		   	loadInterfaceElements();
+
+		   	setTimeout(function(){
+		   		init(); 
+		   	},1000); 
+
+
+		   	$("#autoRouting").click(function(){
+		   		var routes = autoRouting();
+		   		for (var key in routes) {
+		   			drawPath(routes[key].coordinates);  
+		   		}
+		   	});
+
+		   	$("#reset").click(function(){
+		   		var canvas = getCanvas(); 
+		   		var ctx = canvas.getContext("2d");
+		   		ctx.fillStyle = 'rgb(255,255,255)';
+
+				for (var y = 0; y < PARAMS.gridHeight; y++) {  
+				    for (var x = 0; x < PARAMS.gridWidth; x++) { 
+
+			    		if(GRID[y][x] == 'OuterObstacle'){
+			    			ctx.fillStyle = 'rgb(255,255,255)'; 
+			    			ctx.fillRect(normalizePoint(x)+1,normalizePoint(y)+1,PARAMS.unit-1,PARAMS.unit-1); 
+	  		    			
+	  		    		}else if (GRID[y][x] == 'Obstacle'){
+	  		    			ctx.fillStyle = 'rgb(255,255,0)'; 
+	  		    			ctx.fillRect(normalizePoint(x)+1,normalizePoint(y)+1,PARAMS.unit-1,PARAMS.unit-1);
+	  		    		}
+	  		    		
+				    }
+				}
+		   		
+		   	});
+		}); 
+
+		</script>
+	<body>
+</html>
+

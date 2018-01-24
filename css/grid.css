@@ -1,0 +1,175 @@
+body{
+	
+    background-image:  url(../img/Blur-5.png); 
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.spinner {
+	visibility: hidden;
+	margin: calc(50% - 150px) auto;
+    width: 40px;
+    height: 40px;
+    position: relative;
+    text-align: center;
+    -webkit-animation: sk-rotate 2.0s infinite linear;
+    animation: sk-rotate 2.0s infinite linear;
+    position: absolute;
+    z-index: 122;
+    top: 0;
+    left: 50%;
+}
+
+.dot1, .dot2 {
+  width: 60%;
+  height: 60%;
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  background-color: #333;
+  border-radius: 100%;
+  
+  -webkit-animation: sk-bounce 2.0s infinite ease-in-out;
+  animation: sk-bounce 2.0s infinite ease-in-out;
+}
+
+.dot2 {
+  top: auto;
+  bottom: 0;
+  -webkit-animation-delay: -1.0s;
+  animation-delay: -1.0s;
+}
+
+@-webkit-keyframes sk-rotate { 100% { -webkit-transform: rotate(360deg) }}
+@keyframes sk-rotate { 100% { transform: rotate(360deg); -webkit-transform: rotate(360deg) }}
+
+@-webkit-keyframes sk-bounce {
+  0%, 100% { -webkit-transform: scale(0.0) }
+  50% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes sk-bounce {
+  0%, 100% { 
+    transform: scale(0.0);
+    -webkit-transform: scale(0.0);
+  } 50% { 
+    transform: scale(1.0);
+    -webkit-transform: scale(1.0);
+  }
+}
+
+#frame #grid{ 
+	height: 100%; 
+	position: relative;
+	z-index: 333;
+	top: -100%; 
+}
+
+#frame #grid div{ 
+    border: 0.5px  rgba(0,0,0,0.5) solid;
+    position: absolute;
+    box-sizing: border-box;
+}
+
+#frame .outerObstacle{ 
+	opacity: 0;
+}
+
+#frame .obstacle, .fixedObstacle{
+	background-color: black; 
+}
+
+
+#frame .start{
+	background-color: green !important ;
+}
+#frame .end{
+	background-color: blue !important ;
+}
+
+#frame .visited{
+	background-color: red;
+}
+
+#frame .path{
+	background-color: red;
+}
+
+#frame .constrain{
+	background-color: gray !important;
+}
+
+
+#frame{
+/*	position: absolute !important;
+    top: 0px;
+    left: 0px;*/
+}
+
+.controls{
+	 padding: 10px;
+}
+
+.controls button {
+	margin: 0 0 10px 0;
+	padding: 5px 12px;
+	width: 100%;
+}
+
+
+#frame img{
+	position: absolute;
+	visibility: hidden;
+}
+
+canvas{
+	padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+
+#handSVGWrapper{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+}
+
+#handSVGWrapper #handSVG{
+	padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+
+.progress{
+	height: 5px;
+	background: rgba(0,0,0,0.5);
+}
+
+#tooltip{
+	position: absolute;
+	z-index: 300; 
+	background: #dc3545;
+	margin: 0;
+	padding: 6px 6px 8px 6px;
+	font-size: 11px;
+	line-height: 6px;
+	color: white;
+	border-radius: 10px 10px 10px 0;
+	visibility: hidden;
+}
+
+#legend{
+	margin: 10px;
+}
+
+#legend > div{ 
+	padding: 10px 15px;
+    font-size: 13px;
+    background: rgba(0,0,0,0.4);
+    color: white;
+}
