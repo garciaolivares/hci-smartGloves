@@ -14,22 +14,36 @@
 
   <body>
     <div class="container-fluid">
-	    <div class="row justify-content-md-center" id="frame"> 
+	    <div class="row " id="frame"> 
 	    	<div class="col-2">
-	    		<div class="controls">
-	    		    <button type="button" id="autoRouting" class="btn btn-danger">Trace Route</button>
-	    		    <button type="button" id="reset" class="btn btn-danger">Draw Obstacles</button>
+	    		<div class="row justify-content-md-center">
+	    			<div class="col controls">
+	    			    <button type="button" id="autoRouting" class="btn btn-danger">Trace Route</button>
+	    			    <button type="button" id="reset" class="btn btn-danger">Draw Obstacles</button>
+	    			</div>
+	    		</div>
+	    		<div class="row justify-content-md-center">
+	    			<div class="col">
+	    				<div class="row">
+	    					<div class="col">
+	    						<img class="img-fluid " id="model1" src="img/render.png" width="100%">
+	    					</div>
+	    					<div class="col">
+	    						<img class="img-fluid " id="model2" src="img/render2.png" width="100%">
+	    					</div> 	
+	    				</div>
+	    			</div>
 	    		</div>
 	    	</div>
 	    	<div class="col"> 
-	    		<img id="handImg" src="img/render.png">
+	    		<img id="handImg" src="img/render2.png">
 	    		<canvas id="handCanvas" class=""></canvas>
 	    		<div id="handSVGWrapper">
 	    			<div id="handSVG"></div>
 	    		</div>
 	    		<div id="tooltip">0,0</div>	 
 	    	</div>
-	    	<div class="col-2">
+	    	<div class="col-3">
 	    		 	<div id="legend" class="row">
 	    		 		<div class="col">
 	    		 			<div  class="row">
@@ -48,17 +62,32 @@
 	    		 				</div>
 	    		 				<div class="col-4">
 	    		 					<svg width="20" height="20">
-	    		 					   <circle cx="10" cy="10" r="5" stroke="black" stroke-width="1" fill="blue" />
+	    		 					   <circle cx="10" cy="10" r="5" stroke="black" stroke-width="1" fill="yellow" />
 	    		 					</svg>
 	    		 				</div>
 	    		 			</div>
 	    		 			<div  class="row">
 	    		 				<div class="col">
-	    		 					Path:
+	    		 					<div class="checkbox">
+									  	<label><input type="checkbox" value="" id="topLayer" checked="true">Top Layer:</label>
+									</div>
+
 	    		 				</div>
 	    		 				<div class="col-4">
 	    		 					<svg width="30" height="20">
 	    		 					   <line x1="0" y1="10" x2="30" y2="10" style="stroke:rgb(255,0,0);stroke-width:4" />
+	    		 					</svg>
+	    		 				</div>
+	    		 			</div>
+	    		 			<div  class="row">
+	    		 				<div class="col">
+	    		 					<div class="checkbox">
+	    		 					  <label><input type="checkbox" value="" id="bottomLayer" checked="true">Bottom Layer:</label>
+	    		 					</div>
+	    		 				</div>
+	    		 				<div class="col-4">
+	    		 					<svg width="30" height="20">
+	    		 					   <line x1="0" y1="10" x2="30" y2="10" style="stroke:rgb(0,0,255);stroke-width:4" />
 	    		 					</svg>
 	    		 				</div>
 	    		 			</div>
@@ -86,7 +115,7 @@
 		}
 
 		var GRID = [];
-		var GRID_AUX = []; 
+		
 		var SVG = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 
 		var getCanvas = function(){
@@ -122,37 +151,22 @@
 			var i;
 			for (var y = 0, j=0; y < canvas.height; y=y+PARAMS.unit, j++) {  
 				GRID[j]=[];
+
 			    for (var x = 0,  i=0; x < canvas.width; x=x+PARAMS.unit, i++) { 
 			    	var index = ((y * canvas.width + x) * 4)+PARAMS.unit; 
 		    		if(data[index+3]==0){  
   		    			GRID[j][i] = 'OuterObstacle';
+
   		    		}else{
   		    			ctx.rect(x,y,PARAMS.unit,PARAMS.unit);
   		    			GRID[j][i] = 'Empty';
+
   		    		}
 			    }
 			} 
 			ctx.stroke(); 
 			PARAMS.gridHeight = j;
-			PARAMS.gridWidth = i;
-
-			$('#handSVG').mousemove(function(e) { 
-			    var pos = findPosition(this); 
-			    if(pos !== undefined){
-		    	    var x =  Math.abs(Math.ceil((e.pageX - pos.x)/PARAMS.unit)-1);
-		    	    var y =  Math.abs(Math.ceil((e.pageY - pos.y)/PARAMS.unit)-1);
-		    	    if(GRID[y][x]!='OuterObstacle'){  
-		    	    	$("#tooltip").html(x +", "+ y).css({"visibility":"visible","top":(((e.pageY - pos.y)+this.offsetTop)-20), "left":((e.pageX - pos.x)+this.offsetLeft+5)});
-		    	    	$(this).css({"cursor":"pointer"});  
-		    	    	 
-		    	    }else{
-		    			$("#tooltip").css({"visibility":"hidden"});
-		    			$(this).css({"cursor":"default"}); 
-		    		}
-			    }
-			}).mouseout(function(e) {
-			    $("#tooltip").css({"visibility":"hidden"}); 
-			}); 
+			PARAMS.gridWidth = i;  
 			    
 		}
 
@@ -169,9 +183,9 @@
 		}  
 
 		var routingSet=[
-				 
 				[
 					{x:21, y:15},  
+					{x:23, y:55},  
 					{x:25,y:125}
 				],
 				[
@@ -181,70 +195,91 @@
 				[
 					{x:21, y:26},  
 					{x:30,y:125}
-				]     				 
+				] ,
+
+				[
+					{x:56, y:24},  
+					{x:48,y:125}
+				]      				 
 			]; 
 
 		var routes=[]; 
 		var iteration =0;
 		var repeat = false;
 
-		function autoRouting(){
- 
-			routingSet =  shuffleArray(routingSet); 
+		var blueRoutes = [];
 
-			for (var key in routingSet) { 
-				
-				var route = routingSet[key]; 
-				//Avoiding Pin overlapping  
-				for (var key2 in routingSet) {
-					var pin = routingSet[key2]; 
-
-					if(key2!=key){
-						setTemporalObstacles(pin);
-					}else{
-						removeTemporalObstacles(pin);
-					}
-				}
-			 	
-				//Initialize grid with the Routing Set
-				 
+		function autoRouting(set){
+			SET = shuffleArray(set); 
+			//iterates each element of the coordinatesSet 
+			clearGrid();
+			for(var key in SET){
+				var completed = true;
+				var route = SET[key]; 
+				var tempRoutes = []; 
+				iteration++;
+				avoidOverlaping(set, key);
 
 				for(var step in route){
-					var i = step +1; 
-					iteration++; 
-					
 					if(step < Object.keys(route).length-1){
 						var s = route[parseInt(step)];
-						var e = route[parseInt(step)+1]; 
+						var e = route[parseInt(step)+1];  
 						setStart(s);
 						setEnd(e);
 						var output = findShortestPath(s,e);
-						var pathCoordinates = output.coordinates;
-						var pathDirections = output.path;
-
-						if(output == false){  
+						if(output == false){
+							for(var obs in tempRoutes){
+								removeObstacles(tempRoutes[obs]);
+							}
+							blueRoutes.push(SET[key]);
+							completed = false;
 							break;
-						}
-
-						routes.push(output);  
-						setObstacles(output);
+						} 
+						output.color = "red";
+						tempRoutes.push(output);
+						setObstacles(output);	
 					}
 				}
-				if(output == false){ 
-					repeat = true;
-					break;
-				} 
-			} 
 
-			if(repeat && iteration<100){ 
-				for (var key in routes) { 
-					removeObstacles(routes[key]);
+				if(completed){
+					for(var line in tempRoutes){ 
+						routes.push(tempRoutes[line]); 
+					}
+				}   
+			} 
+		 
+			clearGrid();
+			if(blueRoutes.length>0){ 
+				for(var key = 0; key<blueRoutes.length; key++){ 
+					var route = blueRoutes[key]; 
+					iteration++;
+					avoidOverlaping(blueRoutes, key);
+					for(var step in route){
+						if(step < Object.keys(route).length-1){
+							var s = route[parseInt(step)];
+							var e = route[parseInt(step)+1];  
+							setStart(s);
+							setEnd(e);
+							var output = findShortestPath(s,e); 
+							if(output == false ){  
+								return false;
+							} 
+							output.color = "blue";
+							routes.push(output);
+							setObstacles(output);	
+						}
+					}     
 				}
-				repeat = false;
-				routes = [];
-				autoRouting();
-			}
+			} 
 			return routes;
+		}
+
+
+		function avoidOverlaping(set, index){
+			for (var key in set) {
+				var pin = SET[key]; 
+				index == key ? removeTemporalObstacles(pin): setTemporalObstacles(pin);  
+			}
 		}
 
 		function setStart(coord){ 
@@ -257,6 +292,17 @@
 			var Y = coord.y;
 			var X = coord.x;
 			GRID[Y][X] = 'End';  
+		}
+
+
+		function clearGrid(){
+			for (var y = 0; y < PARAMS.gridHeight; y++) {  
+			    for (var x = 0; x < PARAMS.gridWidth; x++) { 
+		    		if(GRID[y][x] != 'OuterObstacle'){
+		    			GRID[y][x] ="Empty"; 
+  		    		} 
+			    }
+			}
 		}
 
 		function removeTemporalObstacles(obstacles){ 
@@ -277,7 +323,6 @@
 		}
 
 		function setTemporalObstacles(obstacles){ 
-			 
 			for (var key in obstacles) { 
 				var obstacle = obstacles[key];   
 				var X = obstacle.x;
@@ -295,10 +340,9 @@
 		}
 
 		function setObstacles(obstacles){ 
-
 			for (var key in obstacles.coordinates) { 
 			 	var X = obstacles.coordinates[key].x;
-				var Y = obstacles.coordinates[key].y; 
+				var Y = obstacles.coordinates[key].y;  
 
 				if(GRID[Y][X]!= 'OuterObstacle'){
 					GRID[Y][X] = 'Obstacle';
@@ -386,7 +430,7 @@
 				 
 				// Take the first location off the queue
 				var currentLocation = queue.shift();  
-			  	var directions = ["South", "SouthEast", "West","SouthWest", "North","NorthEast","NorthWest","East"];
+			  	var directions = ["South", "East","North","West","SouthEast", "NorthEast","NorthWest","SouthWest",];
 			  	for( dir in directions){
 			  		var newLocation = exploreInDirection(currentLocation, directions[dir]);
 			  			if (newLocation.status === 'End') { 
@@ -504,10 +548,11 @@
 						normalizePointInSVG(lastPoint.y)+" "; 
 
 			var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-			polyline.setAttribute("stroke","red");
+			polyline.setAttribute("stroke",path.color);
 			polyline.setAttribute("stroke-width", PARAMS.unit-2);
 			polyline.setAttribute("fill", "none");
-			polyline.setAttribute("points",points); 
+			polyline.setAttribute("points",points);
+			polyline.setAttribute("class",path.color); 
 
 			var start = document.createElementNS("http://www.w3.org/2000/svg", "circle");
 			start.setAttribute("stroke","black");
@@ -516,14 +561,16 @@
 			start.setAttribute("r", PARAMS.unit/2);
 			start.setAttribute("cx", normalizePointInSVG(path.coordinates[0].x));
 			start.setAttribute("cy", normalizePointInSVG(path.coordinates[0].y));
+			start.setAttribute("class",path.color); 
 
 			var end  = document.createElementNS("http://www.w3.org/2000/svg", "circle");
 			end.setAttribute("stroke","black");
 			end.setAttribute("stroke-width", 1);
-			end.setAttribute("fill", "blue");
+			end.setAttribute("fill", "yellow");
 			end.setAttribute("r", PARAMS.unit/2);
 			end.setAttribute("cx", normalizePointInSVG(lastPoint.x));
 			end.setAttribute("cy", normalizePointInSVG(lastPoint.y));
+			end.setAttribute("class",path.color); 
 			
 			SVG.appendChild(polyline);
 			SVG.appendChild(start); 
@@ -542,12 +589,38 @@
 		   	// initiate layout and plugins
 		   	loadInterfaceElements();
 
-		   	setTimeout(function(){
-		   		init(); 
-		   	},1000); 
+		   	$("#model1").click(function() {
+		   		$(this).addClass("active");
+		   		$("#model2").removeClass("active"); 
+			  	$("#handImg").attr("src","img/render.png");
+			  	
+			  	setTimeout(function(){
+			  			   		init(); 
+			  			   	},1000); 
+
+			});
+
+		   	$("#model2").click(function() { 
+		   			$(this).addClass("active");
+		   			$("#model1").removeClass("active");
+			  	$("#handImg").attr("src","img/render2.png");
+			  	
+			  	setTimeout(function(){
+			  			   		init(); 
+			  			   	},1000); 
+			  	 
+			});
+
+		   	$("#topLayer").change(function() { 
+			  	$(".red").css("display")=="none"? $(".red").show() : $(".red").hide(); 
+			});
+
+			$("#bottomLayer").change(function() {
+				$(".blue").css("display")=="none"? $(".blue").show() : $(".blue").hide();
+			});
 
 		   	$("#autoRouting").click(function(){
-		   		var routes = autoRouting();
+		   		var routes = autoRouting(routingSet);
 		   		for (var key in routes) {
 		   			drawPath(routes[key]);  
 		   		}
@@ -562,15 +635,33 @@
 				    for (var x = 0; x < PARAMS.gridWidth; x++) { 
 			    		if(GRID[y][x] == 'OuterObstacle'){
 			    			ctx.fillStyle = 'rgb(255,255,255)'; 
-			    			ctx.fillRect(normalizePoint(x)+1,normalizePoint(y)+1,PARAMS.unit-1,PARAMS.unit-1); 
+			    			ctx.fillRect(normalizePoint(x),normalizePoint(y),PARAMS.unit-1,PARAMS.unit-1); 
 	  		    			
 	  		    		}else if (GRID[y][x] == 'Obstacle'){
 	  		    			ctx.fillStyle = 'rgb(255,255,0)'; 
-	  		    			ctx.fillRect(normalizePoint(x)+1,normalizePoint(y)+1,PARAMS.unit-1,PARAMS.unit-1);
+	  		    			ctx.fillRect(normalizePoint(x),normalizePoint(y),PARAMS.unit-1,PARAMS.unit-1);
 	  		    		}
 				    }
 				}
 		   	});
+
+		   	$('#handSVG').mousemove(function(e) { 
+			    var pos = findPosition(this); 
+			    if(pos !== undefined){
+		    	    var x =  Math.abs(Math.ceil((e.pageX - pos.x)/PARAMS.unit)-1);
+		    	    var y =  Math.abs(Math.ceil((e.pageY - pos.y)/PARAMS.unit)-1);
+		    	    if(GRID[y][x]!='OuterObstacle'){  
+		    	    	$("#tooltip").html(x +", "+ y).css({"visibility":"visible","top":(((e.pageY - pos.y)+this.offsetTop)-20), "left":((e.pageX - pos.x)+this.offsetLeft+5)});
+		    	    	$(this).css({"cursor":"pointer"});  
+		    	    	 
+		    	    }else{
+		    			$("#tooltip").css({"visibility":"hidden"});
+		    			$(this).css({"cursor":"default"}); 
+		    		}
+			    }
+			}).mouseout(function(e) {
+			    $("#tooltip").css({"visibility":"hidden"}); 
+			}); 
 		}); 
 
 		</script>
